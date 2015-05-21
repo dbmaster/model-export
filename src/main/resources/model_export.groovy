@@ -11,15 +11,17 @@ import org.apache.poi.ss.usermodel.CellStyle
 import org.apache.poi.hssf.usermodel.HSSFCellStyle
 import com.branegy.dbmaster.custom.field.server.api.ICustomFieldService
 import com.branegy.dbmaster.service.ModelExporter
+import com.branegy.service.core.exception.EntityNotFoundApiException
+import com.branegy.dbmaster.model.Model
+import com.branegy.files.FileService
+import com.branegy.files.FileReference
 
 logger.info("Model=${p_model_name} version=${p_model_version}")
-
 logger.info("FileName=${p_filename}")
-
 
 ModelExporter helper = new ModelExporter(null, null)
 
-def workBook = new SXSSFWorkbook(100);
+def workBook = new SXSSFWorkbook(100)
 def fields = new java.util.ArrayList(dbm.getService(ICustomFieldService.class).getProjectCustomConfigList())
 def sheet = workBook.createSheet("objects") //getSheet
 def sheetColumn = workBook.createSheet("columns") //getSheet
@@ -27,48 +29,48 @@ def sheetColumn = workBook.createSheet("columns") //getSheet
 
 def statisticMap = [:]
 
-  def exportColumns(sheet, helper, statisticMap, rowNumber, object, columns) {
-        for (column in columns) {
-            row = sheet.getRow(rowNumber);
-            if (row==null){
-                row = sheet.createRow(rowNumber);
-            }
-
-            String subjectArea = helper.getSubjectArea(object);
-            String description = column.getCustomData("Description");
-
-            def statistics = helper.getStatistics(statisticMap, subjectArea);
-            if (object instanceof Table) {
-                statistics.countTableColumn++;
-                if (description!=null && description.length()>0) {
-                    statistics.countTableColumnDescribed++;
-                }
-            } else if (object instanceof View) {
-                statistics.countViewColumn++;
-                if (description!=null && description.length()>0) {
-                    statistics.countViewColumnDescribed++;
-                }
-            }
-            int j=0;
-            helper.setValue(row, j++, object.getName());
-            helper.setValue(row, j++, column.getName());
-            helper.setValue(row, j++, column.getPrettyType());
-            helper.setValue(row, j++, column.isNullable());
-            helper.setValue(row, j++, column.getDefaultValue());
-            helper.setValue(row, j++, column.getExtraDefinition());
-            helper.setValue(row, j++, column.getCustomData("Logical Name"));
-            helper.setValue(row, j++, column.getCustomData("Constraints"));
-            helper.setValue(row, j++, column.getCustomData("Data Domain"));
-            helper.setValue(row, j++, column.getCustomData("Sensitive Data"));
-            helper.setValue(row, j++, description);
-            helper.setValue(row, j++, column.getCustomData("Notes"));
-            helper.setValue(row, j++, column.getCustomData("TODO Items"));
-            helper.setValue(row, j++, column.getCustomData("Used By"));
-
-            rowNumber++;    
+def exportColumns(sheet, helper, statisticMap, rowNumber, object, columns) {
+    for (column in columns) {
+        row = sheet.getRow(rowNumber)
+        if (row==null) {
+            row = sheet.createRow(rowNumber)
         }
-        return rowNumber;
+
+        String subjectArea = helper.getSubjectArea(object)
+        String description = column.getCustomData("Description")
+
+        def statistics = helper.getStatistics(statisticMap, subjectArea)
+        if (object instanceof Table) {
+            statistics.countTableColumn++
+            if (description!=null && description.length()>0) {
+                statistics.countTableColumnDescribed++
+            }
+        } else if (object instanceof View) {
+            statistics.countViewColumn++
+            if (description!=null && description.length()>0) {
+                statistics.countViewColumnDescribed++
+            }
+        }
+        int j=0
+        helper.setValue(row, j++, object.getName())
+        helper.setValue(row, j++, column.getName())
+        helper.setValue(row, j++, column.getPrettyType())
+        helper.setValue(row, j++, column.isNullable())
+        helper.setValue(row, j++, column.getDefaultValue())
+        helper.setValue(row, j++, column.getExtraDefinition())
+        helper.setValue(row, j++, column.getCustomData("Logical Name"))
+        helper.setValue(row, j++, column.getCustomData("Constraints"))
+        helper.setValue(row, j++, column.getCustomData("Data Domain"))
+        helper.setValue(row, j++, column.getCustomData("Sensitive Data"))
+        helper.setValue(row, j++, description)
+        helper.setValue(row, j++, column.getCustomData("Notes"))
+        helper.setValue(row, j++, column.getCustomData("TODO Items"))
+        helper.setValue(row, j++, column.getCustomData("Used By"))
+
+        rowNumber++;    
     }
+    return rowNumber;
+}
 
 
 
@@ -84,65 +86,67 @@ helper.setHeader(sheetColumn, null, fields, "Table/View Name", "Column Name",
                 "Logical Name","Constraints","Data Domain",  
                 "Sensitive Data","Description", "Notes", "TODO Items");
 
-def i=1;
-def z=1;
-def current = 0;
+def i=1
+def z=1
+def current = 0
 
 
 def modelService = dbm.getService(ModelService.class)
 // def modelList = modelService.getModelList(null, null)
-def model = modelService.findModelByName(p_model_name, p_model_version, com.branegy.dbmaster.model.Model.FETCH_TREE)
-
-if (model==null) {
-  logger.error("Model ${p_model} was not found")
-  return
+Model model = null
+try {
+    model = modelService.findModelByName(p_model_name, p_model_version, Model.FETCH_TREE)
+} catch (EntityNotFoundApiException e) {
+    def msg = "Model ${p_model_name} / ${p_model_version} was not found"
+    println msg
+    logger.error(msg)
+    return
 }
 
-def total=model.getTables().size()+model.getViews().size()+model.getProcedures().size()+1;
+def total=model.getTables().size() + model.getViews().size() + model.getProcedures().size() + 1
 
 // step 1.1: Export tables
-helper.setProgressMsg("Export tables");
+logger.info("Export tables")
 for (table in model.getTables()) {
-    def row = sheet.getRow(i);
+    def row = sheet.getRow(i)
     if (row==null) {
-    	row = sheet.createRow(i);
+    	row = sheet.createRow(i)
     }
 
-    String subjectArea = helper.getSubjectArea(table);
-    statistics = helper.getStatistics(statisticMap, subjectArea);
-    Object description = table.getCustomData("Description");
+    String subjectArea = helper.getSubjectArea(table)
+    statistics = helper.getStatistics(statisticMap, subjectArea)
+    Object description = table.getCustomData("Description")
     if (description!=null && description.toString().length()>0) {
-        statistics.countTablesDescribed++;
+        statistics.countTablesDescribed++
     }
 
-    statistics.countTables++;
+    statistics.countTables++
 
-    int j=0;
-    helper.setValue(row, j++, "Table");
-    helper.setValue(row, j++, subjectArea);
-    helper.setValue(row, j++, table.getName());
-    helper.setValue(row, j++, table.getCustomData("Logical Name"));
-    helper.setValue(row, j++, table.getCustomData("Source of Records"));
-    helper.setValue(row, j++, table.getCustomData("Used By"));
-    helper.setValue(row, j++, table.getCustomData("Author"));
-    helper.setValue(row, j++, description);
-    helper.setValue(row, j++, table.getCustomData("Notes"));
-    helper.setValue(row, j++, table.getCustomData("TODO Items"));
-    i++;
+    int j=0
+    helper.setValue(row, j++, "Table")
+    helper.setValue(row, j++, subjectArea)
+    helper.setValue(row, j++, table.getName())
+    helper.setValue(row, j++, table.getCustomData("Logical Name"))
+    helper.setValue(row, j++, table.getCustomData("Source of Records"))
+    helper.setValue(row, j++, table.getCustomData("Used By"))
+    helper.setValue(row, j++, table.getCustomData("Author"))
+    helper.setValue(row, j++, description)
+    helper.setValue(row, j++, table.getCustomData("Notes"))
+    helper.setValue(row, j++, table.getCustomData("TODO Items"))
+    i++
 
-    z = exportColumns(sheetColumn, helper, statisticMap, z, table, table.getColumns());
-    helper.setProgressDone(++current/total); 
-    if (helper.isCanceled()){ 
-	return;
+    z = exportColumns(sheetColumn, helper, statisticMap, z, table, table.getColumns())
+    if (helper.isCanceled()) { 
+	    return;
     }
 }
 
 // step 1.2: Export views
-helper.setProgressMsg("Export views");
+logger.info("Export views")
 for (view in model.getViews()) {
     row = sheet.getRow(i);
     if (row==null){
-        row = sheet.createRow(i);
+        row = sheet.createRow(i)
     }
     String subjectArea = helper.getSubjectArea(view);
     statistics = helper.getStatistics(statisticMap, subjectArea);
@@ -166,15 +170,14 @@ for (view in model.getViews()) {
 
     i++;
 
-    z = exportColumns(sheetColumn, statisticMap, z, view, view.getColumns());
-    helper.setProgressDone(++current/total);
-    if (helper.isCanceled()){ 
-	return;
+    z = exportColumns(sheetColumn, statisticMap, z, view, view.getColumns())    
+    if (helper.isCanceled()) {
+        return;
     }
 }
 
 // step 1.3: Export procedures
-helper.setProgressMsg("Export procedures");
+logger.info("Export procedures")
 for (procedure in model.getProcedures()) {
     row = sheet.getRow(i);
     if (row==null){
@@ -199,10 +202,9 @@ for (procedure in model.getProcedures()) {
     helper.setValue(row, j++, procedure.getCustomData("Notes"));
     helper.setValue(row, j++, procedure.getCustomData("TODO Items"));
 
-    i++;
-    helper.setProgressDone(++current/total);
-    if (helper.isCanceled()){ 
-	return;
+    i++    
+    if (helper.isCanceled()) {
+        return
     }
 }
 
@@ -220,53 +222,52 @@ helper.setHeader(sheet, null, null,
 
 row = sheet.getRow(0);
 
-   //to enable newlines you need set a cell styles with wrap=true
+// to enable newlines you need set a cell styles with wrap=true
 
-    cs = workBook.createCellStyle();
-    cs.setWrapText(true);
-    cs.setVerticalAlignment(CellStyle.VERTICAL_TOP);
-    cs.setFillBackgroundColor(HSSFColor.GREEN.index);
+cs = workBook.createCellStyle();
+cs.setWrapText(true);
+cs.setVerticalAlignment(CellStyle.VERTICAL_TOP);
+cs.setFillBackgroundColor(HSSFColor.GREEN.index);
 //    cs.setFillPattern(HSSFCellStyle.SOLID_FOREGROUND);
 
-    for (columnIndex in 0..12) row.getCell(columnIndex).setCellStyle(cs)
+for (columnIndex in 0..12) row.getCell(columnIndex).setCellStyle(cs)
 
-    // cell.setCellStyle(cs);
-
-    //increase row height to accomodate two lines of text
-    row.setHeightInPoints((float)3.0*sheet.getDefaultRowHeightInPoints());
+// cell.setCellStyle(cs);
+//increase row height to accomodate two lines of text
+row.setHeightInPoints((float)3.0*sheet.getDefaultRowHeightInPoints())
 
 i=1;
-helper.setProgressMsg("Export statistics");
+helper.setProgressMsg("Export statistics")
 
-    font = workBook.createFont();
-    font.setFontHeightInPoints((short)10);
-    font.setFontName("Arial Unicode MS");
-    font.setColor(HSSFColor.GREEN.index);
+font = workBook.createFont()
+font.setFontHeightInPoints((short)10)
+font.setFontName("Arial Unicode MS")
+font.setColor(HSSFColor.GREEN.index)
 
-    // Fonts are set into a style so create a new one to use.
-    style = workBook.createCellStyle();
-    style.setFont(font);
+// Fonts are set into a style so create a new one to use.
+style = workBook.createCellStyle()
+style.setFont(font)
 
-    style2 = workBook.createCellStyle();
-    style2.setDataFormat(workBook.createDataFormat().getFormat("0%"));
+style2 = workBook.createCellStyle()
+style2.setDataFormat(workBook.createDataFormat().getFormat("0%"))
 
 for (statistics in statisticMap.values()) {
-    row = sheet.getRow(i);
+    row = sheet.getRow(i)
     if (row==null){
-        row = sheet.createRow(i);
+        row = sheet.createRow(i)
     }
-    int j=0;
-    helper.setValue(row, j++, statistics.subjectArea);
-    helper.setValue(row, j++, statistics.countTables);
-    helper.setValue(row, j++, statistics.countTablesDescribed);
-    helper.setValue(row, j++, statistics.countTableColumn);
-    helper.setValue(row, j++, statistics.countTableColumnDescribed);
-    helper.setValue(row, j++, statistics.countViews);
-    helper.setValue(row, j++, statistics.countViewDescribed);
-    helper.setValue(row, j++, statistics.countViewColumn);
-    helper.setValue(row, j++, statistics.countViewColumnDescribed);
-    helper.setValue(row, j++, statistics.countProcedures);
-    helper.setValue(row, j++, statistics.countProceduresDescribed);
+    int j=0
+    helper.setValue(row, j++, statistics.subjectArea)
+    helper.setValue(row, j++, statistics.countTables)
+    helper.setValue(row, j++, statistics.countTablesDescribed)
+    helper.setValue(row, j++, statistics.countTableColumn)
+    helper.setValue(row, j++, statistics.countTableColumnDescribed)
+    helper.setValue(row, j++, statistics.countViews)
+    helper.setValue(row, j++, statistics.countViewDescribed)
+    helper.setValue(row, j++, statistics.countViewColumn)
+    helper.setValue(row, j++, statistics.countViewColumnDescribed)
+    helper.setValue(row, j++, statistics.countProcedures)
+    helper.setValue(row, j++, statistics.countProceduresDescribed)
 
 
 
@@ -280,9 +281,9 @@ for (statistics in statisticMap.values()) {
     //            setValue(row, j++, statistics.countParameters);
     //            setValue(row, j++, statistics.countParametersDescribed);
     i++;
-    if (helper.isCanceled()){ 
-	return;
-    }	
+    if (helper.isCanceled()) {
+        return;
+    }
 }
 
 for (columnIndex in 0..10) sheet.autoSizeColumn(columnIndex)
@@ -291,35 +292,42 @@ sheet.setColumnWidth(12,10*256)
 
 // step 4 Export Field Description
 
-   sheet = workBook.createSheet("field_description"); //getSheet
-   i=1;
-   helper.setProgressMsg("Exporting fields");
-   helper.setHeader(sheet, null, null,"Object", "Custom Field Name", "Custom Field Description");
+sheet = workBook.createSheet("field_description") //getSheet
+i=1;
+helper.setProgressMsg("Exporting fields")
+helper.setHeader(sheet, null, null, "Object", "Custom Field Name", "Custom Field Description")
 
-   cs = workBook.createCellStyle();
-   cs.setWrapText(true);
+cs = workBook.createCellStyle()
+cs.setWrapText(true)
 
-   fields.sort([compare:{a,b -> a.clazz.equals(b.clazz) ? a.name.compareTo(b.name) : a.clazz.compareTo(b.clazz) }] as Comparator)
+fields.sort([compare:{a,b -> a.clazz.equals(b.clazz) ? a.name.compareTo(b.name) : a.clazz.compareTo(b.clazz) }] as Comparator)
 
-   for (field in fields) {
-      row = sheet.getRow(i);
-      if (row==null) { row = sheet.createRow(i); }
-      int j=0;
-      helper.setValue(row, j++, field.clazz)
-      helper.setValue(row, j++, field.name)
-      helper.setValue(row, j++, field.description)
-      i++;
-   }
-   sheet.autoSizeColumn(0)
-   sheet.autoSizeColumn(1)
-   sheet.setColumnWidth(2,40*256)
+for (field in fields) {
+    row = sheet.getRow(i)
+    if (row==null) { row = sheet.createRow(i) }
+    int j=0
+    helper.setValue(row, j++, field.clazz)
+    helper.setValue(row, j++, field.name)
+    helper.setValue(row, j++, field.description)
+    i++
+}
+sheet.autoSizeColumn(0)
+sheet.autoSizeColumn(1)
+sheet.setColumnWidth(2,40*256)
 
-  def fileService = dbm.getService(com.branegy.files.FileService)
-  def file = fileService.createFile(p_filename, "model-export")  
-  def outputStream = file.getOutputStream()
+def fileService = dbm.getService(FileService)
+FileReference file = null
 
-  workBook.write(outputStream)
-  outputStream.close()
-  helper.setProgressDone(1)
+try {
+    file = fileService.getFile(p_filename.trim())
+    logger.info("File ${p_filename} already exists. Replacing content")
+} catch (EntityNotFoundApiException e) {
+    // this means file does not exists
+    file = fileService.createFile(p_filename, "model-export")
+}
 
-  println "Export completed. Download file ${p_filename} from the 'Files' tab"
+def outputStream = file.getOutputStream()
+workBook.write(outputStream)
+outputStream.close()
+
+println "Export completed. Download file ${p_filename} from the 'Files' tab"
