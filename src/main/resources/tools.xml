@@ -1,0 +1,14 @@
+<tools>
+    <tool id="model-export" title="Model export" projectTypes="modeling">
+        <description>Exports a model into excel</description>
+
+
+        <parameters>
+            <parameter name="p_model_name"      title="Model Name"    type="string" required="true" width="200" />
+            <parameter name="p_model_version"   title="Model Version" type="string" required="true" width="200" />
+            <parameter name="p_filename"        title="File Name"     type="string" required="true" width="200" />
+        </parameters>
+
+        <output  script="model_export.groovy" type="html" />
+    </tool>
+</tools>
