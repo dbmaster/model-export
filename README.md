@@ -1,6 +1,6 @@
-# How to export a model using "Model Export" plugin.
+## How to export a model using "Model Export" plugin.
 
-## Step1. Find out model name and version you want to export. 
+### Step1. Find out model name and version you want to export. 
 
 You can find it in combo box "Model" or in Properties of the model.
 
