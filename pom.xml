@@ -8,7 +8,7 @@
     <name>Model Export</name>
     <description>Export a selected model into a file</description>
 
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <packaging>bundle</packaging>
 
     <parent>
