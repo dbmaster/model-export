@@ -10,7 +10,7 @@ You can find it in combo box "Model" or in Properties of the model.
 
 ![](https://raw.githubusercontent.com/dbmaster/model-export/master/wiki/images/dbmaster_05_22_006.png)
 
-### Step3. Execute a tool
+### Step3. Execute the tool
 
 * Provide parameters Model Name, Version and file name (better with .xlsx extension)
 * Hit execute button and wait until it finished with a message.
