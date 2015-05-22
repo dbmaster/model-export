@@ -1,7 +1,4 @@
-# model-export
-Export data dictionary model into excel
-
-How to export a model using "Model Export" plugin.
+# How to export a model using "Model Export" plugin.
 
 ## Step1. Find out model name and version you want to export. 
 
