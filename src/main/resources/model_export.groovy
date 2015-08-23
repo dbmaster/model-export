@@ -300,7 +300,7 @@ helper.setHeader(sheet, null, null, "Object", "Custom Field Name", "Custom Field
 cs = workBook.createCellStyle()
 cs.setWrapText(true)
 
-fields.sort([compare:{a,b -> a.clazz.equals(b.clazz) ? a.name.compareTo(b.name) : a.clazz.compareTo(b.clazz) }] as Comparator)
+fields.sort{[compare:{a,b -> a.clazz.equals(b.clazz) ? a.name.compareTo(b.name) : a.clazz.compareTo(b.clazz) }] as Comparator}
 
 for (field in fields) {
     row = sheet.getRow(i)
